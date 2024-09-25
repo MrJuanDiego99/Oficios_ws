@@ -59,6 +59,22 @@ const oficios = async (req, res) => {
   }
 }
 //-------*************************************------------
+const documentos = async (req, res) => {
+  console.log("LLEGA DOCUMENTOS");
+  try {
+    const datos = await pool.query("SELECT * FROM public.tipo_documento WHERE estado = 'A'");
+    if (datos.rows.length > 0) {
+      let documentos = datos.rows;
+      return res.status(200).json({documentos});
+    }else {
+      return res.status(200).json({msg: 'Error en la consulta'});
+    }
+
+  } catch (error) {
+    return res.status(500).json({ msg: 'Error en el servidor' });
+  }
+}
+//-------*************************************------------
 const agregar = async (req, res) => {
   console.log("LLEGA AGREGAR", req.body);
   const form = req.body.formulario;
@@ -66,11 +82,10 @@ const agregar = async (req, res) => {
 
   try {
     
-    const query1 = `INSERT INTO public.usuarios (num_identificacion, nombres, apellidos, celular, correo, direccion, rol, clave) 
-      VALUES ('${form.num_identificacion}', '${form.nombres}', '${form.apellidos}', '${form.celular}', '${form.correo}', '${form.direccion}', '${form.rol}', '${form.clave}')`;
+    const query1 = `INSERT INTO public.usuarios (num_identificacion, nombres, apellidos, celular, correo, direccion, rol, clave, id_tipo_documento) 
+      VALUES ('${form.num_identificacion}', '${form.nombres}', '${form.apellidos}', '${form.celular}', '${form.correo}', '${form.direccion}', '${form.rol}', '${form.clave}', '${form.id_tipo_documento}')`;
     const datos = await pool.query(query1);
 
-    
     if (form.rol === 'T' || form.rol === 'D') {
       const query2 = `SELECT * FROM public.usuarios WHERE num_identificacion = '${form.num_identificacion}'`;
       const datos2 = await pool.query(query2);
@@ -119,6 +134,22 @@ const servicio = async (req, res) => {
   try {
     const query1 = `INSERT INTO public.servicios (id_usuario, id_usuario_oficio, valor_servicio) 
       VALUES ('${form.id_usuario}', '${form.id_usuario_oficio}', '${form.valor_servicio}')`;
+    const datos = await pool.query(query1);
+
+    return res.status(200).json(datos);
+  } catch (error) {
+    console.log("error-------------", error);
+    return res.status(500).json({ msg: 'Error en el servidor' });
+  }
+};
+
+//-------*************************************------------
+const agregaroficio = async (req, res) => {
+  console.log("LLEGA AGREGAR agregaroficio", req.body);
+  const form = req.body.formulario;
+  try {
+    const query1 = `INSERT INTO public.oficios (detalle) 
+      VALUES ('${form.oficio}')`;
     const datos = await pool.query(query1);
 
     return res.status(200).json(datos);
@@ -225,5 +256,7 @@ module.exports = {
   servicio,
   servsoli,
   soliserv,
-  peradmin
+  peradmin,
+  documentos,
+  agregaroficio
 };
