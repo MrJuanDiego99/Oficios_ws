@@ -5,23 +5,32 @@ const jwt = require('jsonwebtoken');
 //-------*************************************------------
 const login = async (req, res) => {
   const datos = req.body;
-  console.log("datos+++",datos);
+  console.log("datos+++", datos);
   try {
-      const result = await pool.query('SELECT * FROM public.usuarios WHERE num_identificacion = $1', [datos.cedula]);
+    const result = await pool.query('SELECT * FROM public.usuarios WHERE num_identificacion = $1', [datos.cedula]);
 
-      if (result.rows.length > 0) {
-          const user = result.rows[0];
-          if (user.clave == datos.clave) {
-              const token = jwt.sign({ id: user.id }, 'secreto_para_jwt', { expiresIn: '1h' });
-              return res.status(200).json({ msg: 'Contraseña correcta', token });
-          } else {
-              return res.status(200).json(2);
-          }
+    if (result.rows.length > 0) {
+      const user = result.rows[0];
+      if (user.clave == datos.clave) {
+        const token = jwt.sign({
+          id: user.id
+        }, 'secreto_para_jwt', {
+          expiresIn: '1h'
+        });
+        return res.status(200).json({
+          msg: 'Contraseña correcta',
+          token
+        });
       } else {
-          return res.status(200).json(1);
+        return res.status(200).json(2);
       }
+    } else {
+      return res.status(200).json(1);
+    }
   } catch (error) {
-      return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 };
 
@@ -32,13 +41,17 @@ const personas = async (req, res) => {
     const datos = await pool.query('SELECT * FROM public.usuarios WHERE num_identificacion = $1', [info.cedula]);
     if (datos.rows.length > 0) {
       let info2 = datos.rows[0];
-      return res.status(200).json({info2});
-    }else {
+      return res.status(200).json({
+        info2
+      });
+    } else {
       return res.status(200).json(1);
     }
 
   } catch (error) {
-    return res.status(500).json({msg: 'Error en la consulta' });
+    return res.status(500).json({
+      msg: 'Error en la consulta'
+    });
   }
 }
 
@@ -49,13 +62,19 @@ const oficios = async (req, res) => {
     const datos = await pool.query("SELECT * FROM public.oficios WHERE estado = 'A'");
     if (datos.rows.length > 0) {
       let oficios = datos.rows;
-      return res.status(200).json({oficios});
-    }else {
-      return res.status(200).json({msg: 'Error en la consulta'});
+      return res.status(200).json({
+        oficios
+      });
+    } else {
+      return res.status(200).json({
+        msg: 'Error en la consulta'
+      });
     }
 
   } catch (error) {
-    return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 }
 //-------*************************************------------
@@ -65,13 +84,19 @@ const documentos = async (req, res) => {
     const datos = await pool.query("SELECT * FROM public.tipo_documento WHERE estado = 'A'");
     if (datos.rows.length > 0) {
       let documentos = datos.rows;
-      return res.status(200).json({documentos});
-    }else {
-      return res.status(200).json({msg: 'Error en la consulta'});
+      return res.status(200).json({
+        documentos
+      });
+    } else {
+      return res.status(200).json({
+        msg: 'Error en la consulta'
+      });
     }
 
   } catch (error) {
-    return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 }
 //-------*************************************------------
@@ -81,32 +106,40 @@ const agregar = async (req, res) => {
   const form2 = req.body.formulario2;
 
   try {
-    
-    const query1 = `INSERT INTO public.usuarios (num_identificacion, nombres, apellidos, celular, correo, direccion, rol, clave, id_tipo_documento) 
+    const query = `select id_usuario from public.usuarios u where u.num_identificacion = '${form.num_identificacion}' and u.id_tipo_documento = '${form.id_tipo_documento}';`
+    const datos0 = await pool.query(query);
+    if (datos0) {
+      return res.status(200).json(1);
+    } else {
+      const query1 = `INSERT INTO public.usuarios (num_identificacion, nombres, apellidos, celular, correo, direccion, rol, clave, id_tipo_documento) 
       VALUES ('${form.num_identificacion}', '${form.nombres}', '${form.apellidos}', '${form.celular}', '${form.correo}', '${form.direccion}', '${form.rol}', '${form.clave}', '${form.id_tipo_documento}')`;
-    const datos = await pool.query(query1);
+      const datos = await pool.query(query1);
 
-    if (form.rol === 'T' || form.rol === 'D') {
-      const query2 = `SELECT * FROM public.usuarios WHERE num_identificacion = '${form.num_identificacion}'`;
-      const datos2 = await pool.query(query2);
-      
-      const info2 = datos2.rows[0];
-      console.log("info2", info2);
+      if (form.rol === 'T' || form.rol === 'D') {
+        const query2 = `SELECT * FROM public.usuarios WHERE num_identificacion = '${form.num_identificacion}'`;
+        const datos2 = await pool.query(query2);
 
-      form2.id_usuario = info2.id_usuario;
-      form2.id_oficio = Number(form2.id_oficio);
-      console.log("formulario2", form2);
+        const info2 = datos2.rows[0];
+        console.log("info2", info2);
 
-      const query3 = `INSERT INTO public.usuario_oficio (id_usuario, detalle, precio_servicio, id_oficio) 
+        form2.id_usuario = info2.id_usuario;
+        form2.id_oficio = Number(form2.id_oficio);
+        console.log("formulario2", form2);
+
+        const query3 = `INSERT INTO public.usuario_oficio (id_usuario, detalle, precio_servicio, id_oficio) 
         VALUES ('${form2.id_usuario}', '${form2.detalle}', '${form2.precio_servicio}', ${form2.id_oficio})`;
-      const datos3 = await pool.query(query3);
-      return res.status(200).json({ info3: datos3 });
+        const datos3 = await pool.query(query3);
+        return res.status(200).json({
+          info3: datos3
+        });
+      }
+      return res.status(200).json(datos);
     }
-
-    return res.status(200).json(datos);
   } catch (error) {
     console.log("error-------------", error);
-    return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 };
 
@@ -117,13 +150,19 @@ const servicioUsuario = async (req, res) => {
     const datos = await pool.query("SELECT u.id_usuario, uo.detalle, uo.precio_servicio, u.nombres , u.apellidos, uo.id_usuario_oficio, u.celular, u.correo, o.detalle as oficio FROM public.usuario_oficio uo join public.usuarios u on u.id_usuario = uo.id_usuario  join public.oficios o on o.id_oficio = uo.id_oficio WHERE uo.estado = 'A' order by u.nombres");
     if (datos.rows.length > 0) {
       let serviciosusu = datos.rows;
-      return res.status(200).json({serviciosusu});
-    }else {
-      return res.status(200).json({msg: 'Error en la consulta'});
+      return res.status(200).json({
+        serviciosusu
+      });
+    } else {
+      return res.status(200).json({
+        msg: 'Error en la consulta'
+      });
     }
 
   } catch (error) {
-    return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 }
 
@@ -139,7 +178,9 @@ const servicio = async (req, res) => {
     return res.status(200).json(datos);
   } catch (error) {
     console.log("error-------------", error);
-    return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 };
 
@@ -155,14 +196,16 @@ const agregaroficio = async (req, res) => {
     return res.status(200).json(datos);
   } catch (error) {
     console.log("error-------------", error);
-    return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 };
 
 //-------*********************************------------
 const servsoli = async (req, res) => {
   console.log("Buscar servSoli", req.body);
-  
+
   const info = req.body;
   try {
     const datos = await pool.query(
@@ -178,24 +221,30 @@ const servsoli = async (req, res) => {
       where s.id_usuario = $1`, [info.id_usuario]);
     if (datos.rows.length > 0) {
       let info2 = datos.rows;
-      return res.status(200).json({info2});
-    }else {
-      return res.status(200).json({msg: 'error en la solicitud'});
+      return res.status(200).json({
+        info2
+      });
+    } else {
+      return res.status(200).json({
+        msg: 'error en la solicitud'
+      });
     }
 
   } catch (error) {
-    return res.status(500).json({msg: 'Error en la consulta' });
+    return res.status(500).json({
+      msg: 'Error en la consulta'
+    });
   }
 }
 
 //-------*********************************------------
 const soliserv = async (req, res) => {
   console.log("Buscar soliserv", req.body);
-  
   const info = req.body;
   try {
     const datos = await pool.query(
-    `select
+      `select
+    s.id_servicio ,
     u.nombres ,
     u.apellidos ,
     u.celular ,
@@ -210,13 +259,19 @@ const soliserv = async (req, res) => {
     where uo.id_usuario = $1`, [info.id_usuario]);
     if (datos.rows.length > 0) {
       let info2 = datos.rows;
-      return res.status(200).json({info2});
-    }else {
-      return res.status(200).json({msg: 'error en la solicitud'});
+      return res.status(200).json({
+        info2
+      });
+    } else {
+      return res.status(200).json({
+        msg: 'error en la solicitud'
+      });
     }
 
   } catch (error) {
-    return res.status(500).json({msg: 'Error en la consulta' });
+    return res.status(500).json({
+      msg: 'Error en la consulta'
+    });
   }
 }
 
@@ -236,18 +291,60 @@ const peradmin = async (req, res) => {
     from public.usuarios u where u.rol = 'T' or u.rol = 'C' or u.rol = 'D'`);
     if (datos.rows.length > 0) {
       let info2 = datos.rows;
-      return res.status(200).json({info2});
-    }else {
-      return res.status(200).json({msg: 'Error en la consulta'});
+      return res.status(200).json({
+        info2
+      });
+    } else {
+      return res.status(200).json({
+        msg: 'Error en la consulta'
+      });
     }
 
   } catch (error) {
-    return res.status(500).json({ msg: 'Error en el servidor' });
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
   }
 }
 
+//-------*************************************------------
+const aceptar = async (req, res) => {
+  console.log("LLEGA actualizar estado servicio", req.body);
+  const id = req.body
+  try {
+    const datos = await pool.query(
+      `UPDATE public.servicios
+	  SET estado ='A'
+	  WHERE id_servicio = $1 `, [id.id_servicio]);
+    return res.status(200).json(datos);
+  } catch (error) {
+    console.log("error-------------", error);
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
+  }
+};
 
-module.exports = { 
+//-------*************************************------------
+const rechazar = async (req, res) => {
+  console.log("LLEGA actualizar estado servicio", req.body);
+  const id = req.body
+  try {
+    const datos = await pool.query(
+      `UPDATE public.servicios
+	  SET estado ='R'
+	  WHERE id_servicio = $1 `, [id.id_servicio]);
+    return res.status(200).json(datos);
+  } catch (error) {
+    console.log("error-------------", error);
+    return res.status(500).json({
+      msg: 'Error en el servidor'
+    });
+  }
+};
+
+
+module.exports = {
   login,
   personas,
   oficios,
@@ -258,5 +355,7 @@ module.exports = {
   soliserv,
   peradmin,
   documentos,
-  agregaroficio
+  agregaroficio,
+  aceptar,
+  rechazar
 };
